@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# Smoke check for the homepage (lane 1).
+#   1. Static checks (always): semantics, a11y basics, nav targets, local assets, CSS tokens.
+#   2. Render check (when a Chromium is found): headless DOM dump + desktop/mobile screenshots.
+#
+# Env:
+#   CHROMIUM=/path/to/chrome   browser binary to use (default: chromium, chrome, or Playwright's headless shell)
+#   SMOKE_REQUIRE_RENDER=1     fail if no browser is available instead of skipping the render step
+#   SMOKE_OUT=dir              where screenshots go (default: a temp dir, printed at the end)
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "== static checks"
+python3 -I - "$PWD" <<'PY'
+import os, re, sys
+from html.parser import HTMLParser
+
+root = sys.argv[1]
+page = os.path.join(root, "index.html")
+html = open(page, encoding="utf-8").read()
+
+class P(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.stack, self.tags, self.ids, self.links, self.assets = [], [], [], [], []
+        self.nav = {}          # aria-label -> [hrefs]
+        self.cur_nav = None
+        self.h1 = 0
+        self.cards = 0
+        self.current = []
+        self.title = ""
+        self._in_title = False
+        self.missing_alt = 0
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        self.tags.append((tag, a))
+        if "id" in a: self.ids.append(a["id"])
+        if tag == "nav": self.cur_nav = a.get("aria-label", "")
+        if tag == "a" and "href" in a:
+            self.links.append(a["href"])
+            if self.cur_nav is not None: self.nav.setdefault(self.cur_nav, []).append(a["href"])
+            if a.get("aria-current") == "page": self.current.append(a["href"])
+        if tag == "link" and a.get("rel") == "stylesheet": self.assets.append(a["href"])
+        if tag in ("img", "script") and "src" in a: self.assets.append(a["src"])
+        if tag == "img" and "alt" not in a: self.missing_alt += 1
+        if tag == "h1": self.h1 += 1
+        if tag == "article" and "project-card" in a.get("class", "").split(): self.cards += 1
+        if tag == "title": self._in_title = True
+    def handle_endtag(self, tag):
+        if tag == "nav": self.cur_nav = None
+        if tag == "title": self._in_title = False
+    def handle_data(self, d):
+        if self._in_title: self.title += d
+
+p = P(); p.feed(html)
+fails, warns = [], []
+def check(ok, msg):
+    (print(f"  ok   {msg}") if ok else fails.append(msg))
+
+tagnames = [t for t, _ in p.tags]
+first = lambda name: next((a for t, a in p.tags if t == name), None)
+
+check(re.match(r"\s*<!DOCTYPE html>", html, re.I) is not None, "doctype")
+check((first("html") or {}).get("lang"), "html[lang]")
+check(any(t == "meta" and a.get("charset") for t, a in p.tags), "meta charset")
+check(any(t == "meta" and a.get("name") == "viewport" for t, a in p.tags), "meta viewport")
+check(any(t == "meta" and a.get("name") == "description" and a.get("content") for t, a in p.tags), "meta description")
+check(p.title.strip() != "", f"<title> ({p.title.strip()!r})")
+for landmark in ("header", "nav", "main", "footer"):
+    check(landmark in tagnames, f"<{landmark}> landmark")
+check(p.h1 == 1, f"exactly one <h1> (found {p.h1})")
+check(len(p.ids) == len(set(p.ids)), "unique ids")
+check(p.missing_alt == 0, "all <img> have alt")
+check(p.links and p.links[0] == "#main" and "main" in p.ids, "skip link is first link and targets #main")
+check(not any(h.startswith("#") and h[1:] not in p.ids for h in p.links), "in-page anchors resolve")
+
+main_nav = p.nav.get("Main", [])
+for target in ("projects.html", "about.html", "contact.html"):
+    check(target in main_nav, f"main nav links to {target}")
+check(p.current == ["index.html"], "aria-current=page on Home only")
+check(p.cards >= 3, f"featured projects teaser has {p.cards} cards")
+
+# Local stylesheets/scripts this lane ships must exist.
+for asset in p.assets:
+    if re.match(r"^(https?:|data:|//)", asset): continue
+    check(os.path.isfile(os.path.join(root, asset)), f"asset exists: {asset}")
+
+# Cross-lane pages: warn only (they arrive when lanes 2/3 merge).
+for target in sorted({h for h in p.links if h.endswith(".html")}):
+    if not os.path.isfile(os.path.join(root, target)):
+        warns.append(f"{target} not in this branch yet (owned by another lane)")
+
+# Every var(--x) used in our CSS must be defined in the tokens or locally.
+css_files = [os.path.join(root, a) for a in p.assets if a.endswith(".css") and os.path.isfile(os.path.join(root, a))]
+defined, used = set(), set()
+for f in css_files:
+    src = open(f, encoding="utf-8").read()
+    defined |= set(re.findall(r"(--[\w-]+)\s*:", src))
+    used |= set(re.findall(r"var\((--[\w-]+)", src))
+undefined = sorted(used - defined)
+check(not undefined, "all CSS custom properties defined" + (f" (missing: {', '.join(undefined)})" if undefined else ""))
+
+for w in warns: print(f"  warn {w}")
+if fails:
+    for f in fails: print(f"  FAIL {f}", file=sys.stderr)
+    sys.exit(1)
+PY
+
+echo "== render check"
+candidates=()
+if [[ -n "${CHROMIUM:-}" ]]; then
+  candidates=("$CHROMIUM")
+else
+  for c in chromium chromium-browser google-chrome google-chrome-stable; do
+    if command -v "$c" >/dev/null; then candidates+=("$(command -v "$c")"); fi
+  done
+  while IFS= read -r c; do candidates+=("$c"); done < <(
+    ls -1d "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"/chromium_headless_shell-*/*/chrome-headless-shell 2>/dev/null | sort -r || true)
+fi
+if [[ ${#candidates[@]} -eq 0 ]]; then
+  if [[ "${SMOKE_REQUIRE_RENDER:-0}" == 1 ]]; then echo "  FAIL no Chromium found (set CHROMIUM=...)" >&2; exit 1; fi
+  echo "  skip no Chromium found (set CHROMIUM=... or SMOKE_REQUIRE_RENDER=1)"
+  echo "OK: homepage static checks passed"
+  exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+out="${SMOKE_OUT:-$tmp/shots}"; mkdir -p "$out"
+url="file://$PWD/index.html"
+run_browser() {
+  # Isolated HOME/profile so the browser never writes to the user's config.
+  HOME="$tmp/home" XDG_CONFIG_HOME="$tmp/cfg" XDG_CACHE_HOME="$tmp/cache" \
+    "$browser" --headless --no-sandbox --disable-gpu --disable-crash-reporter --hide-scrollbars \
+    --user-data-dir="$tmp/profile" --virtual-time-budget=2000 "$@" 2>>"$tmp/browser.log"
+}
+
+# Use the first candidate that actually renders (some builds abort in restricted environments).
+dom="" browser=""
+for c in "${candidates[@]}"; do
+  browser="$c"
+  if dom="$(run_browser --dump-dom "$url")" && [[ -n "$dom" ]]; then break; fi
+  echo "  info $(basename "$c") could not render, trying next"
+  dom=""
+done
+if [[ -z "$dom" ]]; then
+  echo "  FAIL no browser rendered the page; last log lines:" >&2
+  grep -v crashpad "$tmp/browser.log" | tail -5 >&2
+  exit 1
+fi
+cards="$(grep -o 'class="project-card"' <<<"$dom" | wc -l)"
+navs="$(grep -o '<nav class="site-nav"' <<<"$dom" | wc -l)"
+[[ "$cards" -ge 3 ]] || { echo "  FAIL rendered $cards project cards" >&2; exit 1; }
+[[ "$navs" -eq 1 ]] || { echo "  FAIL main nav not rendered" >&2; exit 1; }
+echo "  ok   rendered DOM: $cards cards, main nav present ($(basename "$browser"))"
+
+run_browser --window-size=1280,1600 --screenshot="$out/home-desktop.png" "$url" || true
+run_browser --window-size=390,2400 --screenshot="$out/home-mobile.png" "$url" || true
+for s in home-desktop home-mobile; do
+  [[ -s "$out/$s.png" ]] || { echo "  FAIL screenshot $s missing" >&2; exit 1; }
+done
+echo "  ok   screenshots: $out/home-desktop.png $out/home-mobile.png"
+[[ -n "${SMOKE_OUT:-}" ]] || echo "       (temp dir, removed on exit; set SMOKE_OUT=dir to keep them)"
+
+echo "OK: homepage smoke passed"
