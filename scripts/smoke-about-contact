@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Smoke check for the about + contact pages (lane-3).
+#  1. Unit + static tests: contact-form validation, shared chrome parity,
+#     ids/ARIA references, labelled form controls (tests/*.test.js).
+#  2. Headless Chromium checks: keyboard focus + skip link, error summary,
+#     live error clearing, valid submit, honeypot, no horizontal scroll at
+#     375px, no console errors (scripts/test-about-contact-browser.mjs).
+# Set SKIP_BROWSER=1 to run only step 1 (e.g. where Chromium cannot start).
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "== unit + static tests"
+node --test --test-reporter=dot tests/contact-form.test.js tests/pages.test.js
+
+if [[ "${SKIP_BROWSER:-}" == 1 ]]; then echo "OK (browser checks skipped)"; exit 0; fi
+
+echo "== browser checks"
+node scripts/test-about-contact-browser.mjs
+echo "OK"
