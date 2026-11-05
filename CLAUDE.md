@@ -20,7 +20,8 @@ Sprint order (do not skip):
 - Cloud lanes push through the Claude GitHub app, not the local token.
 
 ## Done means
-- Tests or smoke checks pass
+<!-- gstack:verify: scripts/smoke --strict -->
+- Tests or smoke checks pass (`scripts/smoke --strict` is the check `/verify` and `/ship` run)
 - `/review` clean enough to ship
 - One PR per lane; no half-finished lanes; no squashing multiple lanes into one PR
 
