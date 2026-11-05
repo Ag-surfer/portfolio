@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Spawn a Claude cloud session for a named feature lane.
+# Spawn a Claude cloud session with an explicit feature scope.
 set -euo pipefail
-name="${1:-}"
-if [[ -z "$name" ]]; then
-  echo "Usage: $0 <lane-name> [extra claude args...]" >&2
+lane="${1:-}"
+scope="${2:-}"
+if [[ -z "$lane" || -z "$scope" ]]; then
+  echo "Usage: $0 <lane-name> \"<feature scope>\"" >&2
+  echo "Example: $0 portfolio-lane-4 \"build the projects grid page in src/app/projects\"" >&2
   exit 1
 fi
-shift || true
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-exec claude --cloud "$name" "$@"
+prompt="$lane: $scope. Own only the files this feature needs. Create a branch named $lane if needed. Done means green smoke/tests and a ready PR branch. Do not wait for extra confirmation beyond clarifying overlaps."
+exec claude --cloud "$prompt"

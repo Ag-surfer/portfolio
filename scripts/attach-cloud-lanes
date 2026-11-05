@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Attach Herdr cloud panes to the latest portfolio cloud sessions.
+set -euo pipefail
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+mapfile -t SIDS < <(awk '/^session_/{print $1}' "$root/.claude-cloud-lanes.txt")
+panes=(w4:p5 w4:p6 w4:p7)
+for i in 0 1 2; do
+  sid="${SIDS[$i]:-}"
+  pane="${panes[$i]}"
+  [[ -n "$sid" ]] || continue
+  herdr pane run "$pane" claude --teleport "$sid"
+  echo "attached $pane -> $sid"
+done
