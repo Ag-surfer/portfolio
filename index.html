@@ -3,14 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Portfolio</title>
-  <meta name="description" content="Selected projects and work.">
+  <title>Portfolio — Software engineer</title>
+  <meta name="description" content="Portfolio of a software engineer who builds small, sharp tools for the web. Selected projects, background and contact.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131311" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Portfolio — Software engineer">
+  <meta property="og:description" content="Selected projects, background and contact.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f5d50'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='16' font-weight='700' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="index.html">Portfolio</a>
+      <a class="brand" href="index.html" aria-label="Portfolio home">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <span>Portfolio</span>
+      </a>
       <nav class="site-nav" aria-label="Main">
         <ul>
           <li><a href="index.html" aria-current="page">Home</a></li>
@@ -22,37 +35,89 @@
     </div>
   </header>
 
-  <main>
-    <section class="hero wrap">
-      <p class="eyebrow">Hello, I build things</p>
-      <h1>Software engineer crafting small, sharp tools.</h1>
-      <p class="lede">Placeholder introduction. Replace it with a sentence or two about what you do and what you care about.</p>
-      <a class="button" href="projects.html">See all projects</a>
+  <main id="main" tabindex="-1">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <p class="eyebrow">Software engineer</p>
+      <h1 id="hero-title">I build small, sharp tools that make work feel lighter.</h1>
+      <p class="lede">Placeholder introduction: a sentence or two about what you build, who it is for, and what you care about. Keep it specific and human.</p>
+      <div class="actions">
+        <a class="button button-primary" href="projects.html">View projects</a>
+        <a class="button button-secondary" href="contact.html">Get in touch</a>
+      </div>
+      <ul class="highlights" aria-label="Highlights">
+        <li>Web platform &amp; tooling</li>
+        <li>Developer experience</li>
+        <li>Open to new work</li>
+      </ul>
     </section>
 
     <section class="section wrap" aria-labelledby="featured-title">
-      <h2 id="featured-title">Selected projects</h2>
-      <!-- Placeholder list; the full showcase lives on projects.html. -->
+      <div class="section-head">
+        <div>
+          <h2 id="featured-title">Featured projects</h2>
+          <p>A few things I have built recently.</p>
+        </div>
+        <a class="more-link" href="projects.html">All projects <span aria-hidden="true">&rarr;</span></a>
+      </div>
+
+      <!-- Teaser only: the full showcase (data, filters) lives on projects.html, owned by lane 2. -->
       <ul class="project-list">
-        <li class="project-card">
-          <h3>Project One</h3>
-          <p>Short description of the project, the problem it solves, and the outcome.</p>
+        <li>
+          <article class="project-card">
+            <h3><a href="projects.html">Project One</a></h3>
+            <p>Short description of the project, the problem it solves, and the outcome it delivered.</p>
+            <ul class="tags" aria-label="Technologies">
+              <li>TypeScript</li>
+              <li>CLI</li>
+            </ul>
+          </article>
         </li>
-        <li class="project-card">
-          <h3>Project Two</h3>
-          <p>Placeholder for a second project. Add a link once it is public.</p>
+        <li>
+          <article class="project-card">
+            <h3><a href="projects.html">Project Two</a></h3>
+            <p>Placeholder for a second project. One or two lines on what makes it interesting.</p>
+            <ul class="tags" aria-label="Technologies">
+              <li>HTML</li>
+              <li>CSS</li>
+            </ul>
+          </article>
         </li>
-        <li class="project-card">
-          <h3>Project Three</h3>
-          <p>Placeholder for a third project. Keep each summary to two lines.</p>
+        <li>
+          <article class="project-card">
+            <h3><a href="projects.html">Project Three</a></h3>
+            <p>Placeholder for a third project. Keep summaries short so the cards stay even.</p>
+            <ul class="tags" aria-label="Technologies">
+              <li>Node</li>
+              <li>Tooling</li>
+            </ul>
+          </article>
         </li>
       </ul>
+    </section>
+
+    <section class="section wrap" aria-labelledby="cta-title">
+      <div class="cta">
+        <h2 id="cta-title">Have a project in mind?</h2>
+        <p>I am happy to talk about new work, collaborations, or just compare notes on tooling.</p>
+        <div class="actions">
+          <a class="button button-primary" href="contact.html">Contact me</a>
+          <a class="button button-secondary" href="about.html">More about me</a>
+        </div>
+      </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <p>&copy; 2026 Portfolio</p>
+      <p>&copy; <span>2026</span> Portfolio. Built with plain HTML &amp; CSS.</p>
+      <nav class="footer-nav" aria-label="Footer">
+        <ul>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="#main">Back to top</a></li>
+        </ul>
+      </nav>
     </div>
   </footer>
 </body>
