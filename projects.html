@@ -4,23 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Projects</title>
-  <meta name="description" content="Selected projects: tools, apps and experiments.">
+  <meta name="description" content="Selected projects: tools, apps and experiments, searchable and filterable by tag.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="preload" href="data/projects.json" as="fetch" crossorigin="anonymous">
   <link rel="stylesheet" href="assets/projects/projects.css">
 </head>
 <body>
+  <a class="pj-skip" href="#pj-grid">Skip to project list</a>
+
   <header class="pj-header">
     <a class="pj-back" href="index.html">&larr; Home</a>
     <h1>Projects</h1>
-    <p class="pj-lede">Tools, apps and experiments. Filter by tag.</p>
+    <p class="pj-lede">Tools, apps and experiments. Search, or narrow by tag and status.</p>
   </header>
 
   <main class="pj-main">
-    <nav class="pj-filters" aria-label="Filter projects by tag" id="pj-filters"></nav>
-    <p class="pj-count" id="pj-count" aria-live="polite"></p>
-    <ul class="pj-grid" id="pj-grid"></ul>
-    <noscript><p class="pj-error">Enable JavaScript to see the project list.</p></noscript>
+    <section class="pj-controls" id="pj-controls" aria-label="Filter projects" hidden>
+      <div class="pj-row">
+        <div class="pj-field pj-field-search">
+          <label for="pj-q">Search</label>
+          <div class="pj-search">
+            <input type="search" id="pj-q" placeholder="Title, tech, role…" autocomplete="off"
+                   spellcheck="false" maxlength="100" aria-describedby="pj-q-hint">
+            <kbd class="pj-kbd" aria-hidden="true">/</kbd>
+          </div>
+          <span id="pj-q-hint" class="pj-sr">Press slash to focus search, Escape to clear.</span>
+        </div>
+        <div class="pj-field">
+          <label for="pj-status">Status</label>
+          <select id="pj-status"><option value="">All statuses</option></select>
+        </div>
+        <div class="pj-field">
+          <label for="pj-sort">Sort</label>
+          <select id="pj-sort">
+            <option value="featured">Featured first</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="title">A–Z</option>
+          </select>
+        </div>
+      </div>
+      <div class="pj-tags">
+        <span class="pj-tags-label" id="pj-tags-label">Tags <span class="pj-hint">(match any)</span></span>
+        <div class="pj-tag-list" id="pj-tag-list" role="group" aria-labelledby="pj-tags-label"></div>
+        <button type="button" class="pj-link-btn" id="pj-tag-more" aria-controls="pj-tag-list" aria-expanded="false" hidden></button>
+      </div>
+    </section>
+
+    <div class="pj-statusbar">
+      <p class="pj-count" id="pj-count" role="status" aria-live="polite" aria-atomic="true">Loading projects…</p>
+      <button type="button" class="pj-link-btn" id="pj-clear" hidden>Clear filters</button>
+    </div>
+
+    <ul class="pj-grid" id="pj-grid" aria-busy="true" aria-label="Projects" tabindex="-1"></ul>
+
+    <div class="pj-empty" id="pj-empty" hidden>
+      <h2>No projects match these filters</h2>
+      <p>Try a shorter search, fewer tags, or a different status.</p>
+      <button type="button" class="pj-btn" id="pj-empty-clear">Clear all filters</button>
+    </div>
+
+    <div class="pj-empty pj-error" id="pj-error" role="alert" hidden>
+      <h2>Something went wrong</h2>
+      <p></p>
+    </div>
+
+    <noscript><p class="pj-empty">This page needs JavaScript to list projects.</p></noscript>
   </main>
 
+  <script src="assets/projects/projects-core.js" defer></script>
   <script src="assets/projects/projects.js" defer></script>
 </body>
 </html>
