@@ -13,5 +13,5 @@ if [[ ! -d "$wt" ]]; then
   git -C "$root" worktree add "$wt" -b "$lane" main 2>/dev/null || git -C "$root" worktree add "$wt" "$lane"
 fi
 cd "$wt"
-prompt="$lane: $scope. Work ONLY in this worktree ($wt). Own only this feature's files. Branch $lane. Done = smoke/tests green and commit ready for /review. Avoid files owned by other lanes in LANES.md."
+prompt="$lane: $scope. Work ONLY in this worktree ($wt). Own only this feature's files per LANES.md. Branch $lane. Use Garry Tan gstack skills: implement carefully (/careful near risky edits), keep smoke/tests green, commit ready for local reviewer /review then /ship as its own PR. Never touch other lanes' files. Never use mcp__claude-in-chrome__*; use /browse."
 exec claude --cloud "$prompt"
