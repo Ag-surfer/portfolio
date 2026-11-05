@@ -27,7 +27,8 @@ render() {
     --no-first-run --user-data-dir="$tmp/profile" --virtual-time-budget=5000 \
     --dump-dom "http://127.0.0.1:$port/projects.html$1" 2>/dev/null
 }
-count() { grep -oE "$1" <<<"$2" | wc -l | tr -d ' '; }
+# grep exits 1 on zero matches; under pipefail that would abort the script, so tolerate it.
+count() { { grep -oE "$1" <<<"$2" || true; } | wc -l | tr -d ' '; }
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 total="$(python3 -c 'import json;print(len(json.load(open("data/projects.json"))["projects"]))')"

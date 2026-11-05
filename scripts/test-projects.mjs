@@ -55,6 +55,16 @@ test("normalize strips unsafe link schemes", () => {
   const [p] = Core.normalize([{ slug: "a", title: "A", links: {
     demo: "javascript:alert(1)", repo: "https://example.com", writeup: "notes/a.html" } }]).projects;
   assert.deepEqual(p.links, { demo: "", repo: "https://example.com", writeup: "notes/a.html" });
+
+  const demo = (url) => Core.normalize([{ slug: "a", title: "A", links: { demo: url } }]).projects[0].links.demo;
+  for (const bad of ["java\tscript:alert(1)", "java\nscript:alert(1)", "JaVaScRiPt:alert(1)",
+    "\u0000javascript:alert(1)", "data:text/html,<b>x</b>", "vbscript:x", "http://[bad"]) {
+    assert.equal(demo(bad), "", `rejects ${JSON.stringify(bad)}`);
+  }
+  for (const ok of ["https://example.com/a?b#c", "HTTP://EXAMPLE.COM", "mailto:me@example.com",
+    "/projects.html", "notes/a.html", "#project-a", "//example.com/x"]) {
+    assert.equal(demo(ok), ok, `keeps ${JSON.stringify(ok)}`);
+  }
 });
 
 test("filter: search terms are ANDed, case-insensitive, across fields", () => {
@@ -365,4 +375,54 @@ test("UI: card content — links carry accessible names, external links are safe
   links.forEach((a) => assert.equal(a.getAttribute("rel"), "noopener noreferrer"));
   const details = [...card.walk()].find((n) => n.tagName === "SUMMARY");
   assert.equal(details.textContent, "Highlights (3)");
+});
+
+test("UI: malformed deep-link hash is ignored, not fatal", async () => {
+  for (const hash of ["#%E0", "#%", "#project-%zz"]) {
+    const ui = await boot({ search: "?tags=games", hash });
+    assert.equal(ui.$("pj-error").hidden, true, `${hash}: no error state`);
+    assert.equal(ui.$("pj-controls").hidden, false);
+    assert.ok(ui.visible().length > 0, `${hash}: cards still render`);
+    assert.equal(ui.location.search, "?tags=games", `${hash}: URL filters kept`);
+  }
+});
+
+test("UI: focus stays on a card's tag chip after it reorders the grid", async () => {
+  const ui = await boot();
+  const chipIn = (slug, tag) => [...ui.$("project-" + slug).walk()]
+    .find((n) => n.tagName === "BUTTON" && n.dataset.tag === tag);
+  const chip = chipIn("lanternlight", "games");
+  chip.focus();
+  chip.click();
+  assert.deepEqual(new Set(ui.visible()), new Set(["pixel-garden", "lanternlight"]));
+  assert.equal(ui.document.activeElement, chip, "focus kept on the activated chip");
+  assert.equal(chip.getAttribute("aria-pressed"), "true");
+});
+
+test("UI: when the pressed chip's card hides, focus moves to the tag bar", async () => {
+  const ui = await boot({ search: "?tags=games,cli" });
+  const chip = [...ui.$("project-lanternlight").walk()]
+    .find((n) => n.tagName === "BUTTON" && n.dataset.tag === "games");
+  chip.focus();
+  chip.click();                       // deselect "games": lanternlight (no cli tag) hides
+  assert.equal(ui.$("project-lanternlight").hidden, true);
+  const bar = ui.barTag("games");
+  const expected = bar.hidden ? ui.$("pj-tag-more") : bar;
+  assert.equal(ui.document.activeElement, expected, "focus lands on a visible, related control");
+  assert.notEqual(ui.document.activeElement, chip);
+});
+
+test("UI: deselecting a collapsed tag in the bar moves focus to the expander", async () => {
+  const ui = await boot();
+  const all = Core.tagCounts(Core.normalize(DATA).projects);
+  const rare = all[all.length - 1].tag;          // ranked past the collapsed limit
+  ui.$("pj-tag-more").click();                   // expand
+  const btn = ui.barTag(rare);
+  btn.click();                                   // select
+  ui.$("pj-tag-more").click();                   // collapse: stays visible while selected
+  assert.equal(btn.hidden, false);
+  btn.focus();
+  btn.click();                                   // deselect: button hides when collapsed
+  assert.equal(btn.hidden, true);
+  assert.equal(ui.document.activeElement, ui.$("pj-tag-more"));
 });

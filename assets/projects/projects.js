@@ -209,6 +209,26 @@
     setState({ tags: tags });
   }
 
+  function isShown(node) {
+    if (!node || node.isConnected === false) return false;
+    for (var n = node; n; n = n.parentNode) if (n.hidden) return false;
+    return true;
+  }
+
+  // Toggling a tag can reorder cards (moving a node drops its focus) or hide the
+  // control that was pressed. Keep focus on that control when it is still shown;
+  // otherwise move it to the matching tag-bar button, then the expander, then search.
+  function toggleTagFrom(button) {
+    var tag = button.dataset.tag;
+    toggleTag(tag);
+    var fallback = null;
+    for (var i = 0; i < tagButtons.length; i++) if (tagButtons[i].dataset.tag === tag) fallback = tagButtons[i];
+    var candidates = [button, fallback, ui.tagMore, ui.q];
+    for (var j = 0; j < candidates.length; j++) {
+      if (isShown(candidates[j])) { candidates[j].focus(); return; }
+    }
+  }
+
   function clearFilters() {
     clearTimeout(searchTimer);
     setState({ q: "", tags: [], status: "" });
@@ -240,7 +260,7 @@
     // Delegated: one listener for the tag bar, one for every card's chips.
     function onChip(e) {
       var b = e.target.closest("button[data-tag]");
-      if (b) toggleTag(b.dataset.tag);
+      if (b) toggleTagFrom(b);
     }
     ui.tagList.addEventListener("click", onChip);
     ui.grid.addEventListener("click", onChip);
@@ -297,7 +317,12 @@
     render();
 
     // Deep link (#project-slug): if filters from the URL hide that card, drop them.
-    var id = location.hash ? decodeURIComponent(location.hash.slice(1)) : "";
+    var id = "";
+    try {
+      id = location.hash ? decodeURIComponent(location.hash.slice(1)) : "";
+    } catch (e) {
+      id = "";  // malformed escape such as #%E0: ignore the deep link
+    }
     var target = id && document.getElementById(id);
     if (target && target.classList.contains("pj-card")) {
       if (target.hidden) setState({ q: "", tags: [], status: "" });

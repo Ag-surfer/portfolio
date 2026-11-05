@@ -27,12 +27,19 @@
     return out;
   }
 
+  var SAFE_PROTOCOLS = { "http:": true, "https:": true, "mailto:": true };
+
   function safeUrl(v) {
     var s = str(v);
     if (!s) return "";
-    // Allow relative links and http(s)/mailto only; drop javascript: and friends.
-    if (/^[a-z][a-z0-9+.-]*:/i.test(s) && !/^(https?:|mailto:)/i.test(s)) return "";
-    return s;
+    // Parse the way the browser will (the URL parser strips tabs/newlines, so
+    // "java\tscript:" resolves to javascript:). Relative links resolve against
+    // an http base and pass; anything else must use an allowlisted protocol.
+    try {
+      return SAFE_PROTOCOLS[new URL(s, "http://relative.invalid/").protocol] ? s : "";
+    } catch (e) {
+      return "";
+    }
   }
 
   /**
