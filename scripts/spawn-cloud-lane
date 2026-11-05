@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Spawn a Claude cloud session for a named feature lane.
+set -euo pipefail
+name="${1:-}"
+if [[ -z "$name" ]]; then
+  echo "Usage: $0 <lane-name> [extra claude args...]" >&2
+  exit 1
+fi
+shift || true
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+exec claude --cloud "$name" "$@"
