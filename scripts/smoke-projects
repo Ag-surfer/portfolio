@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Smoke check: serve the repo, render projects.html in headless Chromium, assert cards rendered.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+port="${PORT:-8765}"
+browser="${CHROMIUM:-$(command -v chromium || command -v chromium-browser || command -v google-chrome)}"
+expected="$(python3 -c 'import json;print(len(json.load(open("data/projects.json"))["projects"]))')"
+
+python3 -m http.server "$port" --bind 127.0.0.1 >/dev/null 2>&1 &
+srv=$!
+profile="$(mktemp -d)"
+trap 'kill $srv 2>/dev/null || true; rm -rf "$profile"' EXIT
+for _ in $(seq 20); do curl -fs "http://127.0.0.1:$port/projects.html" >/dev/null && break; sleep 0.2; done
+
+dom="$("$browser" --headless --no-sandbox --user-data-dir="$profile" --disable-gpu --virtual-time-budget=5000 \
+  --dump-dom "http://127.0.0.1:$port/projects.html" 2>/dev/null)"
+
+cards="$(grep -o 'class="pj-card' <<<"$dom" | wc -l)"
+filters="$(grep -o 'class="pj-filter"' <<<"$dom" | wc -l)"
+if [[ "$cards" -ne "$expected" ]]; then
+  echo "FAIL: rendered $cards cards, expected $expected" >&2
+  grep -o '<li class="pj-error">[^<]*' <<<"$dom" >&2 || true
+  exit 1
+fi
+if [[ "$filters" -lt 2 ]]; then echo "FAIL: tag filters missing ($filters)" >&2; exit 1; fi
+echo "OK: $cards project cards, $filters filter buttons"

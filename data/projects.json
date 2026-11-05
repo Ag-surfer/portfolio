@@ -1,0 +1,64 @@
+{
+  "projects": [
+    {
+      "slug": "herdr-lanes",
+      "title": "Herdr Lanes",
+      "summary": "Fan-out orchestration for cloud coding sessions: one feature scope per lane, disjoint files, merged through a review gate.",
+      "year": 2026,
+      "status": "active",
+      "featured": true,
+      "tags": ["tooling", "agents", "bash"],
+      "links": { "repo": "#", "demo": "" }
+    },
+    {
+      "slug": "trail-log",
+      "title": "Trail Log",
+      "summary": "Offline-first hiking journal that syncs GPX tracks, photos and notes once you are back in signal range.",
+      "year": 2025,
+      "status": "shipped",
+      "featured": true,
+      "tags": ["mobile", "offline", "maps"],
+      "links": { "repo": "#", "demo": "#" }
+    },
+    {
+      "slug": "ledger-lite",
+      "title": "Ledger Lite",
+      "summary": "Plain-text budgeting CLI with monthly rollups, category rules and CSV import from common bank exports.",
+      "year": 2025,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["cli", "finance", "rust"],
+      "links": { "repo": "#", "demo": "" }
+    },
+    {
+      "slug": "pixel-garden",
+      "title": "Pixel Garden",
+      "summary": "Generative art toy: plant seeds on a grid and watch L-system plants grow, wilt and cross-pollinate.",
+      "year": 2024,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["web", "canvas", "generative"],
+      "links": { "repo": "#", "demo": "#" }
+    },
+    {
+      "slug": "quiet-hours",
+      "title": "Quiet Hours",
+      "summary": "Desktop focus timer that mutes notifications, logs sessions and shows a weekly heatmap of deep work.",
+      "year": 2024,
+      "status": "archived",
+      "featured": false,
+      "tags": ["desktop", "productivity"],
+      "links": { "repo": "#", "demo": "" }
+    },
+    {
+      "slug": "doc-diff",
+      "title": "Doc Diff",
+      "summary": "Semantic diff for Markdown docs that highlights moved sections and reworded paragraphs, not just changed lines.",
+      "year": 2026,
+      "status": "wip",
+      "featured": false,
+      "tags": ["web", "tooling", "markdown"],
+      "links": { "repo": "#", "demo": "" }
+    }
+  ]
+}
