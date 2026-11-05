@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+# Site-wide smoke gate (builder-owned). Design: docs/designs/portfolio-integration.md
+#
+#   scripts/smoke            lane tier: gates each lane merge
+#   scripts/smoke --strict   strict tier: required after unification and for every later change to main
+#
+# Lane tier : every lane check present (smoke-home, smoke-projects, smoke-about-contact), and for each
+#             page: <html lang>, exactly one <h1>, local href/src resolve. Run once after all lane merges.
+# Strict    : lane tier plus shared chrome identity, skip link, current-page marker, stylesheet order,
+#             no literal colors outside css/tokens.css (print styles allowed), theme-color/favicon match
+#             tokens, every var(--x) defined, WCAG AA contrast for token pairs (light and dark).
+#
+# The page list is derived from index.html's <nav class="site-nav"> (one source of truth).
+# Env: SMOKE_SKIP_RENDER=1 is passed through to lane scripts that render in a browser.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+strict=0
+case "${1:-}" in
+  --strict) strict=1 ;;
+  "") ;;
+  *) echo "usage: scripts/smoke [--strict]" >&2; exit 2 ;;
+esac
+
+failed=()
+run() { # run <label> <cmd...>
+  echo "== $1"
+  shift
+  local rc=0
+  "$@" || rc=$?
+  if ((rc)); then failed+=("$*"); echo "  FAIL $* (exit $rc)"; fi
+}
+
+[[ -f scripts/smoke-home ]]     && run "lane: smoke-home"     bash scripts/smoke-home
+[[ -f scripts/smoke-projects ]] && run "lane: smoke-projects" bash scripts/smoke-projects
+if [[ -f scripts/smoke-about-contact ]]; then
+  run "lane: smoke-about-contact" bash scripts/smoke-about-contact   # runs tests/*.test.js itself
+elif compgen -G 'tests/*.test.js' >/dev/null; then
+  run "lane: node tests" node --test 'tests/**/*.test.js'
+fi
+
+echo "== pages ($([[ $strict == 1 ]] && echo strict || echo lane) tier)"
+if ! SMOKE_STRICT="$strict" python3 -I - "$PWD" <<'PY'
+import os, re, sys
+from html.parser import HTMLParser
+
+root = sys.argv[1]
+strict = os.environ.get("SMOKE_STRICT") == "1"
+fails, skips = [], []
+
+def ok(msg): print(f"  ok   {msg}")
+def check(cond, msg):
+    if cond: ok(msg)
+    else: fails.append(msg)
+def path(rel): return os.path.join(root, rel)
+def read(rel): return open(path(rel), encoding="utf-8").read()
+def local(ref): return not re.match(r"^(https?:|mailto:|tel:|data:|javascript:|//|#)", ref)
+def norm(ref):  # "./x.html#a" -> "x.html"; "" or "/" -> "index.html"
+    ref = ref.split("#", 1)[0].split("?", 1)[0]
+    ref = ref[2:] if ref.startswith("./") else ref.lstrip("/")
+    return ref or "index.html"
+
+class Page(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.ids, self.links, self.refs, self.css = [], [], [], [], []
+        self.h1 = 0; self.title = ""; self._t = False; self.missing_alt = 0
+        self.in_site_nav = False; self.site_nav, self.current = [], []
+        self.inline_styles = []
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs); self.tags.append((tag, a))
+        if "id" in a: self.ids.append(a["id"])
+        if "style" in a: self.inline_styles.append(a["style"])
+        if tag == "nav" and "site-nav" in a.get("class", "").split(): self.in_site_nav = True
+        if tag == "a" and "href" in a:
+            self.links.append(a["href"]); self.refs.append(a["href"])
+            if self.in_site_nav:
+                self.site_nav.append(a["href"])
+                if a.get("aria-current") == "page": self.current.append(a["href"])
+        if tag == "link" and "href" in a:
+            self.refs.append(a["href"])
+            if a.get("rel") == "stylesheet": self.css.append(a["href"])
+        if tag in ("img", "script") and "src" in a: self.refs.append(a["src"])
+        if tag == "img" and "alt" not in a: self.missing_alt += 1
+        if tag == "h1": self.h1 += 1
+        if tag == "title": self._t = True
+    def handle_endtag(self, tag):
+        if tag == "nav": self.in_site_nav = False
+        if tag == "title": self._t = False
+    def handle_data(self, d):
+        if self._t: self.title += d
+
+def parse(rel):
+    p = Page(); p.feed(read(rel)); return p
+
+# ---- page list, derived from the homepage nav -------------------------------------------
+if not os.path.isfile(path("index.html")):
+    print("  FAIL index.html missing: cannot derive the site page list from its .site-nav", file=sys.stderr)
+    sys.exit(1)
+home = parse("index.html")
+site_pages = ["index.html"] + [n for n in dict.fromkeys(norm(h) for h in home.site_nav if local(h))
+                               if n.endswith(".html") and n != "index.html"]
+present = [p for p in site_pages if os.path.isfile(path(p))]
+print(f"  info site pages: {' '.join(site_pages)}")
+for p in site_pages:
+    if p not in present: fails.append(f"{p}: linked from index.html .site-nav but missing")
+
+# ---- CSS helpers ----------------------------------------------------------------------------
+NAMED = set("""aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown
+burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod
+darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen
+darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue
+firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew
+hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan
+lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray
+lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid
+mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream
+mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen
+paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown
+royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow
+springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen""".split())
+# Properties whose values are never colors, so a color word there is an identifier (animation-name, grid-area, ...).
+NON_COLOR_PROPS = re.compile(r"^(animation(-name)?|grid(-area|-template-areas|-row|-column)?|font(-family)?|content|"
+                             r"counter-(reset|increment)|list-style-type|transition(-property)?|will-change)$")
+LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(", re.I)
+ALLOW = {("assets/projects/projects.css", p) for p in ("--pj-good", "--pj-warn")}
+
+def strip_css(src):
+    src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    src = re.sub(r"url\([^)]*\)", "url()", src)
+    return re.sub(r"(\"[^\"]*\"|'[^']*')", '""', src)
+
+def drop_print(src):  # literals inside @media print are allowed (R10)
+    out, i = [], 0
+    for m in re.finditer(r"@media\s+print\b[^{]*\{", src):
+        if m.start() < i: continue
+        depth, j = 1, m.end()
+        while j < len(src) and depth:
+            depth += {"{": 1, "}": -1}.get(src[j], 0); j += 1
+        out.append(src[i:m.start()]); i = j
+    return "".join(out) + src[i:]
+
+def declarations(src):
+    src = drop_print(strip_css(src))
+    while True:  # innermost blocks first, so @media bodies are handled too
+        blocks = re.findall(r"\{([^{}]*)\}", src)
+        if not blocks: break
+        for body in blocks:
+            for decl in body.split(";"):
+                if ":" in decl:
+                    prop, val = decl.split(":", 1)
+                    yield prop.strip(), val.strip()
+        src = re.sub(r"\{[^{}]*\}", ";", src)
+
+def literal_color(prop, val):
+    if LITERAL.search(val): return True
+    if NON_COLOR_PROPS.match(prop.lower()): return False
+    return any(w.lower() in NAMED for w in re.findall(r"(?<![\w-])[A-Za-z]+(?![\w-])", val))
+
+# ---- per-page checks ------------------------------------------------------------------------
+chrome_ref = None
+def chrome(src):
+    def cut(open_, close):
+        i = src.find(open_); j = src.find(close, i)
+        return None if i < 0 or j < 0 else src[i:j + len(close)].replace(' aria-current="page"', "")
+    return {"header": cut("<header", "</header>"), "footer": cut("<footer", "</footer>"),
+            "skip link": cut('<a class="skip-link"', "</a>")}
+if strict and "index.html" in present:
+    chrome_ref = chrome(read("index.html"))
+
+css_checked = set()
+for page in present:
+    src, p = read(page), parse(page)
+    first = lambda n: next((a for t, a in p.tags if t == n), None)
+    check((first("html") or {}).get("lang"), f"{page}: html[lang]")
+    check(p.h1 == 1, f"{page}: exactly one <h1> (found {p.h1})")
+    for ref in p.refs:
+        if not local(ref) or not norm(ref): continue
+        target = norm(ref)
+        if not os.path.isfile(path(target)): fails.append(f"{page}: local reference missing: {ref}")
+    if not strict: continue
+
+    tagnames = [t for t, _ in p.tags]
+    check(re.match(r"\s*<!DOCTYPE html>", src, re.I) is not None, f"{page}: doctype")
+    check(any(t == "meta" and a.get("charset") for t, a in p.tags), f"{page}: meta charset")
+    check(any(t == "meta" and a.get("name") == "viewport" for t, a in p.tags), f"{page}: meta viewport")
+    check(any(t == "meta" and a.get("name") == "description" and a.get("content") for t, a in p.tags),
+          f"{page}: meta description")
+    check(p.title.strip() != "", f"{page}: <title> ({p.title.strip()!r})")
+    for lm in ("header", "nav", "main", "footer"):
+        check(lm in tagnames, f"{page}: <{lm}> landmark")
+    check(len(p.ids) == len(set(p.ids)), f"{page}: unique ids")
+    check(p.missing_alt == 0, f"{page}: all <img> have alt")
+    check(bool(p.links) and p.links[0] == "#main" and "main" in p.ids and (first("main") or {}).get("id") == "main",
+          f"{page}: skip link is first link and targets <main id=\"main\">")
+    check(not any(h.startswith("#") and len(h) > 1 and h[1:] not in p.ids for h in p.links),
+          f"{page}: in-page anchors resolve")
+    check([norm(h) for h in p.current] == [page], f"{page}: exactly one aria-current=page in .site-nav, on itself")
+    check(p.css[:2] == ["css/tokens.css", "css/base.css"],
+          f"{page}: first stylesheets are css/tokens.css, css/base.css (found {p.css[:2]})")
+    if chrome_ref is not None and page != "index.html":
+        mine = chrome(src)
+        for part in ("header", "footer", "skip link"):
+            check(mine[part] is not None and mine[part] == chrome_ref[part], f"{page}: {part} identical to index.html")
+    for style in p.inline_styles:
+        for prop, val in declarations("x{" + style + "}"):
+            if literal_color(prop, val): fails.append(f"{page}: inline style literal color: {prop}: {val}")
+
+    # every var(--x) used in this page's stylesheets is defined in that same set
+    sheets = [c for c in p.css if local(c) and os.path.isfile(path(norm(c)))]
+    defined, used = set(), set()
+    for c in sheets:
+        s = strip_css(read(norm(c)))
+        defined |= set(re.findall(r"(--[\w-]+)\s*:", s))
+        used |= set(re.findall(r"var\(\s*(--[\w-]+)", s))
+    missing = sorted(used - defined)
+    check(not missing, f"{page}: all CSS custom properties defined" + (f" (missing: {', '.join(missing)})" if missing else ""))
+
+    for c in sheets:
+        rel = norm(c)
+        if rel == "css/tokens.css" or rel in css_checked: continue
+        css_checked.add(rel)
+        bad = [f"{prop}: {val}" for prop, val in declarations(read(rel))
+               if literal_color(prop, val) and (rel, prop) not in ALLOW]
+        check(not bad, f"{rel}: no literal colors outside css/tokens.css" +
+              (f" ({len(bad)} found, first: {bad[0]})" if bad else ""))
+
+# ---- tokens: theme-color/favicon match, WCAG contrast (strict) -------------------------------
+def tokens():
+    if not os.path.isfile(path("css/tokens.css")): return None, None
+    src = strip_css(read("css/tokens.css"))
+    light, dark = {}, {}
+    for m in re.finditer(r"(@media[^{]*\{\s*)?:root\s*\{([^{}]*)\}", src):
+        target = dark if m.group(1) and "dark" in m.group(1) else light
+        for prop, val in re.findall(r"(--[\w-]+)\s*:\s*([^;]+)", m.group(2)): target[prop] = val.strip()
+    return light, {**light, **dark}
+
+def rgb(v):
+    m = re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})", v or "")
+    if not m: return None
+    h = m.group(1); h = "".join(c * 2 for c in h) if len(h) == 3 else h
+    return tuple(int(h[k:k + 2], 16) / 255 for k in (0, 2, 4))
+
+def ratio(a, b):
+    def lum(c): return sum(w * (x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4)
+                           for w, x in zip((0.2126, 0.7152, 0.0722), c))
+    la, lb = sorted((lum(a), lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+PAIRS = [("--text", "--bg", 4.5), ("--muted", "--bg", 4.5), ("--accent-text", "--accent", 4.5),
+         ("--danger", "--danger-bg", 4.5), ("--success", "--success-bg", 4.5), ("--focus", "--bg", 3.0)]
+if strict:
+    light, dark = tokens()
+    if light is None:
+        fails.append("css/tokens.css missing")
+    else:
+        for mode, t in (("light", light), ("dark", dark)):
+            for fg, bg, need in PAIRS:
+                a, b = rgb(t.get(fg)), rgb(t.get(bg))
+                if a is None or b is None:
+                    fails.append(f"contrast {mode} {fg}/{bg}: not a hex token ({t.get(fg)!r}, {t.get(bg)!r})"); continue
+                r = ratio(a, b)
+                check(r >= need, f"contrast {mode} {fg}/{bg} {r:.2f}:1 >= {need}:1")
+        for page in present:
+            p = parse(page)
+            for t, a in p.tags:
+                if t == "meta" and a.get("name") == "theme-color":
+                    want = (dark if "dark" in a.get("media", "") else light).get("--bg", "")
+                    check(a.get("content", "").lower() == want.lower(),
+                          f"{page}: theme-color {a.get('content')} matches --bg {want}")
+                if t == "link" and "icon" in a.get("rel", "").split() and a.get("href", "").startswith("data:"):
+                    fills = re.findall(r"fill=['\"](?:%23|#)([0-9a-fA-F]{3,6})['\"]", a["href"])
+                    want = light.get("--accent", "").lstrip("#").lower()
+                    check(bool(fills) and fills[0].lower() == want, f"{page}: favicon fill #{fills[0] if fills else '?'} matches --accent #{want}")
+
+for s in skips: print(f"  SKIP {s}")
+for f in fails: print(f"  FAIL {f}", file=sys.stderr)
+sys.exit(1 if fails else 0)
+PY
+then failed+=("page checks"); fi
+
+if ((${#failed[@]})); then
+  echo "SMOKE FAILED: ${failed[*]}" >&2
+  exit 1
+fi
+echo "SMOKE OK ($([[ $strict == 1 ]] && echo strict || echo lane) tier)"

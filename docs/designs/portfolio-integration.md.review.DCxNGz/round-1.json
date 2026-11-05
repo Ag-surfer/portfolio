@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "round": 1,
+  "document": "/home/kptch/Work/portfolio/docs/designs/portfolio-integration.md",
+  "quality_score": 5,
+  "dimensions": {
+    "completeness": "ISSUES",
+    "consistency": "ISSUES",
+    "clarity": "ISSUES",
+    "scope": "ISSUES",
+    "feasibility": "ISSUES"
+  },
+  "findings": [
+    {
+      "id": "R1-1",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Merge Mechanics says to run `scripts/smoke` after each merge and that checks must pass before the next merge, but `scripts/smoke` step 2 requires every top-level page to load `css/tokens.css` then `css/base.css`, identical nav across pages, and no `--bg:`/`--accent:` outside tokens.css, and step 3 exits nonzero on any failure. `css/base.css` does not exist until the unification commit, which lands after all three merges, and cloud2/cloud3 still carry their own `:root` palettes and projects.html has no site nav. Smoke therefore fails after merge 1 (no base.css), blocking merges 2 and 3, so the stated sequence cannot be executed.",
+      "remedy": "Define which checks gate the intermediate merges (e.g. a `--lanes-only` mode running only the per-lane tests and link/lang/h1 checks) and which static checks become mandatory only after the unification commit, or move unification before the gate; state the exact pass condition at each step."
+    },
+    {
+      "id": "R1-2",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Premise 2 says 'Lanes are committed and idle', but Next Steps 1 says cloud1 still has a pending `smoke-home` edit to commit, and INTEGRATION.md (same date) lists uncommitted in-flight work in all three lanes (cloud2: new `projects-core.js`, stray `.write-probe`; cloud3: +343/-62 rework, new `js/contact-form.js`). The builder-side unification decision, and the 'lane is closed once merged' rule, depend on lanes being idle.",
+      "remedy": "Either record evidence that every lane's working tree is clean at the cited heads, or make 'lane committed, clean tree, final head recorded' an explicit precondition checked before each review and merge."
+    },
+    {
+      "id": "R1-3",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The Assignment says to `/review` `portfolio-lane-1` 'now', while Next Steps 1 says to review cloud1 at `6555928` only after cloud1 commits its pending `smoke-home` edit, which would move the head off `6555928`. The constraint requires sign-off on the lane's final head, so reviewing now, or at `6555928`, reviews a non-final head.",
+      "remedy": "Make the Assignment and Next Steps agree: review cloud1 only after its pending edit is committed, at the new head (recorded when reviewed), not at a hard-coded `6555928`."
+    },
+    {
+      "id": "R1-4",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The design removes cloud2's `data-theme` toggle from projects.html but does not say what happens to the toggle's JS, any persisted theme state, `[data-theme]` CSS selectors in `projects.css`, or the lane tests (`scripts/smoke-projects`, `scripts/test-projects.mjs`) that may assert the toggle exists. Removing only markup can leave dead code or throw on a missing element, and the success criterion requires every lane's own tests to pass.",
+      "remedy": "List the toggle removal scope: markup, JS handlers, `[data-theme]` CSS rules, stored-preference handling, and the lane test assertions that must be updated or deleted in the unification commit."
+    },
+    {
+      "id": "R1-5",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Success Criteria require `scripts/smoke` to exit 0 after the final commit 'including every lane's own tests', but the unification commit changes exactly what those tests may check: projects.html gains header/skip link/main/footer (cloud2's tests were written for the '← Home' page), index.html gains `css/base.css` and chrome rules move out of `styles.css` (cloud1's `smoke-home` checks static + render), and `pages.css` loses its `:root` block (cloud3's `tests/pages.test.js`). The design never says the builder updates lane tests, or who owns them after merge.",
+      "remedy": "State that lane tests are integration territory after merge and that the unification commit updates any assertion invalidated by the shared chrome/token changes, with the reviewer checking that tests were adapted rather than deleted."
+    },
+    {
+      "id": "R1-6",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Dropping the manual toggle and 'relying on prefers-color-scheme site-wide', plus the success criterion that all four pages look consistent 'in light and dark mode', depends on `css/tokens.css` already defining a `prefers-color-scheme: dark` override for its existing color tokens. The design only says to add dark variants for the new `--danger`/`--success` tokens; it does not establish that cloud1's tokens.css has dark values for `--bg`, `--accent`, etc. (the file lives on `portfolio-lane-1` and could not be verified from main). If it does not, projects.html loses its only dark mode.",
+      "remedy": "Cite the existing dark-mode block in `css/tokens.css`, or add to the unification scope a `@media (prefers-color-scheme: dark)` block covering every color token, including the values the `--pj-*` aliases resolve to."
+    },
+    {
+      "id": "R1-7",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The palette check greps only for `--bg:` and `--accent:` outside tokens.css. That would not catch cloud2's literal `--pj-accent: #2563eb` (INTEGRATION.md) because `--pj-accent:` does not contain the substring `--accent:`, nor `--danger:`/`--success:`/`--text:` or hard-coded hex colors in page CSS. The success criterion 'grep finds palette tokens defined only in css/tokens.css' and the claim that smoke 'enforces it so the next lane can't drift' therefore rest on a check too narrow to prove them.",
+      "remedy": "Specify the check precisely: e.g. fail on any `:root` block outside tokens.css that assigns a literal color (hex/rgb/hsl), allowing only `var(--...)` aliases and an explicit allowlist for `--pj-active/wip/archived`."
+    },
+    {
+      "id": "R1-8",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "`node --test tests/` is cited as the cloud3 test command. On Node 21+ the test runner treats positional arguments as glob patterns, and passing a bare directory has been reported to fail with 'Could not find' instead of recursing (the installed node is a recent release per its `--help`, e.g. `--experimental-stream-iter`). The probe confirmed `--test` exists but cannot confirm directory-argument behavior, so the command is unverified.",
+      "remedy": "Use a form that works on the installed Node, such as `node --test 'tests/**/*.test.js'` or explicit file paths, and record the Node version the smoke script assumes."
+    },
+    {
+      "id": "R1-9",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The untracked INTEGRATION.md, written the same day, tells the builder to 'send now' rework messages to cloud1/cloud2/cloud3 (adopt tokens, add chrome to projects.html). This design's Premise 2 instead has the builder do that work on main and send no rework. The design does not say it supersedes INTEGRATION.md, so lanes could receive rework that collides with the builder's unification commit.",
+      "remedy": "State that this design supersedes INTEGRATION.md's lane messages and builder commits, and that no rework is to be sent to the lanes (or delete/update INTEGRATION.md)."
+    },
+    {
+      "id": "R1-10",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The lane table cites heads cloud2 `3daa52c` and cloud3 `7616de7`, and cloud2's accent as `#1d4ed8`, while INTEGRATION.md cites `76b79fc`, `cb2c6a7` and `--pj-accent: #2563eb`. The heads and values could not be verified from main, so it is unclear which snapshot is current.",
+      "remedy": "Record when the heads were read and treat them as informational; the reviewed head is whatever the lane's final commit is at review time."
+    },
+    {
+      "id": "R1-11",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "'Five agents built this site in parallel without a merge conflict in git' is stated as fact, but only three lanes built pages and none of the merges has happened yet; INTEGRATION.md's 'textually clean' is a prediction.",
+      "remedy": "Reword as 'three lanes built it in parallel; the lanes touch disjoint files, so merges are expected to be textually clean'."
+    },
+    {
+      "id": "R1-12",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The smoke check 'exactly one aria-current=\"page\" and it points at the page itself' does not say whether the scope is the header nav or the whole document (the verbatim-copied footer nav could also carry one), or how the index page is matched (`index.html` vs `./` vs `/`).",
+      "remedy": "Scope the check to the header `.site-nav` and define the href normalization used to match the current page."
+    },
+    {
+      "id": "R1-13",
+      "dimension": "completeness",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "INTEGRATION.md reports a stray `.write-probe` file in cloud2. Nothing in the merge steps or smoke checks prevents stray lane artifacts from landing on main.",
+      "remedy": "Add a pre-merge check (reviewer or smoke) that the lane diff contains no stray probe/scratch files."
+    },
+    {
+      "id": "R1-14",
+      "dimension": "scope",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The title promises a 'Production-grade portfolio', but Open Question 3 says placeholder content blocks a public launch and hosting is deferred, so the deliverable is an integrated, consistent site, not production-ready.",
+      "remedy": "Retitle to the actual scope (e.g. 'Integrate the three lane branches into one consistent site') or list the remaining launch blockers explicitly."
+    }
+  ],
+  "prior": []
+}

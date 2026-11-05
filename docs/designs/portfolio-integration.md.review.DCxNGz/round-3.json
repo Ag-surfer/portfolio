@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "round": 3,
+  "document": "/home/kptch/Work/portfolio/docs/designs/portfolio-integration.md",
+  "quality_score": 8,
+  "dimensions": {
+    "completeness": "ISSUES",
+    "consistency": "PASS",
+    "clarity": "ISSUES",
+    "scope": "ISSUES",
+    "feasibility": "ISSUES"
+  },
+  "findings": [
+    {
+      "id": "R3-1",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Carried from R2-3. The merge precondition still ignores 'sandbox placeholder dotfiles' without defining that set. `.write-probe`, the stray file the precondition is meant to catch, is itself an untracked dotfile, so a literal reading could ignore it.",
+      "remedy": "List the ignored placeholder paths explicitly (or give a pattern), and say that `.write-probe` and other scratch dotfiles are not in that set."
+    },
+    {
+      "id": "R3-2",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Carried from R2-4. The precondition runs 'before asking for review', but the head SHA is said to be 'recorded in the merge commit message', which does not exist until the merge. The re-review rule ('if a lane's head moves after review') needs a record of the reviewed head made at review time.",
+      "remedy": "Record the head SHA when review is requested (for example in the review request or the lane digest). Before merging, check that the lane head still equals it, then copy it into the merge commit message."
+    },
+    {
+      "id": "R3-3",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Carried from R2-6 (R1-12). The strict-tier check 'exactly one aria-current=\"page\" inside .site-nav, on the link to the page itself' still does not define how the home page's link is matched (`index.html` vs `./` vs `/`).",
+      "remedy": "Define href normalization, for example: strip a leading './', drop any fragment, and treat '' or '/' as 'index.html'."
+    },
+    {
+      "id": "R3-4",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Carried from R2-7 (R1-11). 'What Makes This Cool' still says 'Five agents built this site in parallel without a merge conflict in git'. No lane is merged yet, and only three lanes built pages.",
+      "remedy": "Reword: three lanes built it in parallel; they touch disjoint files, so the merges are expected to be textually clean."
+    },
+    {
+      "id": "R3-5",
+      "dimension": "scope",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Carried from R2-8 (R1-14). The title still says 'Production-grade portfolio from the three lane branches', while Open Question 3 says placeholder content blocks a public launch and Distribution defers hosting.",
+      "remedy": "Retitle to the actual scope (integrate three lane branches into one consistent site), or list the remaining launch blockers explicitly."
+    },
+    {
+      "id": "R3-6",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Carried from R2-9. The theme-hook scope (only two `[data-theme]` selectors in projects.css), the `tokens.css:64` dark block and the node v26.13.0 / 19-pass claims refer to files and runs in lane worktrees outside this checkout. This review still cannot check them.",
+      "remedy": "Have the reviewer confirm these specific claims during each lane's `/review` (grep cloud2 for `data-theme`/`localStorage`; check the dark block in cloud1's tokens.css) before the unification commit relies on them."
+    },
+    {
+      "id": "R3-7",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "after cloud2: all lane checks pass; zero `SKIP pending-page` lines.",
+      "problem": "The per-merge pass conditions list which `SKIP pending-page` lines are expected, but the lane tier exits 0 whenever the only problems are skipped links. The script cannot know which lanes are merged, so it only skips links to missing SITE_PAGES. If `projects.html` were missing after the cloud2 merge, the lane tier would still exit 0. The 'zero SKIP lines' condition would then rest on the builder reading the output. The strict tier catches this before ship, so the end state is safe, but the intermediate gate is weaker than the stated condition.",
+      "remedy": "Say that the builder checks the SKIP lines against the expected list after each merge. Or let the lane tier take the expected pending pages (for example `--pending projects.html`) and fail when a SKIP falls outside that list."
+    },
+    {
+      "id": "R3-8",
+      "dimension": "completeness",
+      "severity": "minor",
+      "changed_text": "declaration** whose value contains a literal color fails.",
+      "problem": "The widened palette check now fails ordinary declarations as well, such as `box-shadow` with `rgba()`, `color: white` on buttons, or form-state borders in page CSS and in base.css (lifted from styles.css). The unification commit's token additions list only `--danger`, `--danger-bg`, `--success`, `--success-bg`. The design does not say what happens to other literals the check will find: whether new tokens such as a shadow or on-accent color may be added to tokens.css (light and dark), or whether the literals are replaced with existing tokens. A named-color match can also hit non-color identifiers or strings (for example `content: \"red\"`, or an animation or grid-area name that is a color word).",
+      "remedy": "State that any literal color in page CSS or base.css moves to a token in tokens.css, defined in both the light and dark blocks, so the token list is open-ended. Scope the named-color match to color-valued tokens outside strings and `url()`."
+    }
+  ],
+  "prior": [
+    {
+      "id": "R2-1",
+      "status": "resolved",
+      "evidence": "The lane tier now declares SITE_PAGES and reports links to not-yet-existing SITE_PAGES as `SKIP pending-page` without failing; links to other missing files still fail. Explicit pass conditions are given after cloud1, cloud3 and cloud2, and the strict tier turns SKIP into failure. The remaining gap that the script does not enforce the expected SKIP set is minor and tracked as R3-7.",
+      "current_id": null
+    },
+    {
+      "id": "R2-2",
+      "status": "resolved",
+      "evidence": "The palette check now fails any declaration (custom or ordinary property, in CSS files other than tokens.css and in inline style attributes) whose value contains hex/rgb/rgba/hsl/hsla/named colors, with a scoped allowlist of the three --pj status declarations in projects.css. The success criterion now says 'no literal color in any declaration outside css/tokens.css except the three allowlisted status colors', which matches the check.",
+      "current_id": null
+    },
+    {
+      "id": "R2-3",
+      "status": "persisting",
+      "evidence": "The merge precondition still says 'ignoring sandbox placeholder dotfiles' with no defined set.",
+      "current_id": "R3-1"
+    },
+    {
+      "id": "R2-4",
+      "status": "persisting",
+      "evidence": "The precondition still records the head SHA 'in the merge commit message' while being checked before review.",
+      "current_id": "R3-2"
+    },
+    {
+      "id": "R2-5",
+      "status": "resolved",
+      "evidence": "The palette check now says: 'Not literal (always pass): var(--…), transparent, currentColor, and the CSS-wide keywords inherit, initial, unset, revert.'",
+      "current_id": null
+    },
+    {
+      "id": "R2-6",
+      "status": "persisting",
+      "evidence": "The aria-current bullet is unchanged; href normalization for the page's own link is still undefined.",
+      "current_id": "R3-3"
+    },
+    {
+      "id": "R2-7",
+      "status": "persisting",
+      "evidence": "'Five agents built this site in parallel without a merge conflict in git' is unchanged in What Makes This Cool.",
+      "current_id": "R3-4"
+    },
+    {
+      "id": "R2-8",
+      "status": "persisting",
+      "evidence": "The title is still 'Production-grade portfolio from the three lane branches', while Open Question 3 says placeholder content blocks launch.",
+      "current_id": "R3-5"
+    },
+    {
+      "id": "R2-9",
+      "status": "unverified",
+      "evidence": "The lane worktrees (projects.css, tokens.css:64, cloud3 test run) are outside this checkout and cannot be read under the review contract, and the design adds no reviewer confirmation step for these claims.",
+      "current_id": "R3-6"
+    }
+  ]
+}

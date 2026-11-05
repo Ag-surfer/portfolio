@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "round": 2,
+  "document": "/home/kptch/Work/portfolio/docs/designs/portfolio-integration.md",
+  "quality_score": 7,
+  "dimensions": {
+    "completeness": "PASS",
+    "consistency": "ISSUES",
+    "clarity": "ISSUES",
+    "scope": "ISSUES",
+    "feasibility": "ISSUES"
+  },
+  "findings": [
+    {
+      "id": "R2-1",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": "Everything here is true of each lane as built",
+      "problem": "The lane tier gates each intermediate merge and requires that every local `href`/`src` in every top-level `*.html` resolves to a file. The lane table says cloud1's `index.html` has site nav and footer nav, and cloud3's about/contact pages have site nav; those navs link to pages from lanes not yet merged. After merge 1 (cloud1 only) `index.html` would link to `about.html`, `contact.html` and `projects.html`, none of which exist on `main` yet. After merge 2 (cloud3), `projects.html` is still missing. So the lane tier is likely to fail after merge 1 and block merges 2 and 3. The claim 'Everything here is true of each lane as built' is wrong at the main-after-partial-merge state the tier actually runs on. The lane files are outside this checkout, so I could not read the exact hrefs, but the design's own nav description implies this.",
+      "remedy": "Define what the lane-tier link check does with links to sibling pages that are not merged yet. Options: skip local hrefs that point to top-level pages owned by an unmerged lane (with an explicit list), defer link resolution to the strict tier, or merge all three lanes before running any link check. State the exact pass condition after each of the three merges."
+    },
+    {
+      "id": "R2-2",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": "The strict-tier palette check passes: no literal colors outside `css/tokens.css` except the allowlist.",
+      "problem": "The success criterion promises 'no literal colors outside css/tokens.css', but the strict-tier check only fails a custom property assigned a literal color. Ordinary declarations with literal colors pass it, for example a leftover `color: #1d4ed8` or `border-color: #2563eb` in `pages.css` or `projects.css`, which were built around a blue palette. So the check cannot prove the criterion, and a hard-coded blue could survive and break 'same accent' while smoke stays green.",
+      "remedy": "Either widen the check to fail any literal color value (hex, rgb(), hsl(), named color) in any declaration outside tokens.css, with an explicit allowlist, or narrow the success criterion to 'no custom property outside tokens.css is assigned a literal color' and add a separate rule for hard-coded colors in ordinary declarations."
+    },
+    {
+      "id": "R2-3",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "empty, ignoring sandbox",
+      "problem": "The clean-tree precondition ignores 'sandbox placeholder dotfiles', but that set is not defined. `.write-probe`, the very stray file the precondition is meant to catch, is itself an untracked dotfile. A literal reading could treat it as an ignorable placeholder.",
+      "remedy": "List the ignored placeholder paths explicitly (or give a pattern), and say that `.write-probe` and other scratch dotfiles are not in that set."
+    },
+    {
+      "id": "R2-4",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "the final head SHA is recorded in the merge commit message",
+      "problem": "The precondition is checked 'before asking for review', but it says the head SHA is recorded in the merge commit message, which does not exist until the merge. The design does not say where the reviewed head is recorded at review time, which the re-review rule ('if a lane's head moves after review') needs for its comparison.",
+      "remedy": "Record the head SHA when review is requested (for example in the review request or the lane digest). Before merging, check that the lane head still equals that SHA, then copy it into the merge commit message."
+    },
+    {
+      "id": "R2-5",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "(hex, `rgb()`, `hsl()`, named color) fails",
+      "problem": "'Named color' does not say whether CSS keywords such as `transparent`, `currentColor`, `inherit` or `initial` count. If they do, legitimate aliases like `--pj-card-border: transparent` fail.",
+      "remedy": "State that the named-color match uses the CSS named-color list and excludes `transparent`, `currentColor` and CSS-wide keywords (or allowlist them)."
+    },
+    {
+      "id": "R2-6",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "R1-12 is only partly addressed. The aria-current check is now scoped to `.site-nav`, but the design still does not define how 'the link to the page itself' is matched for the home page (`index.html` vs `./` vs `/`).",
+      "remedy": "Define the href normalization, for example: strip a leading './' and treat '' or '/' as 'index.html'."
+    },
+    {
+      "id": "R2-7",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "'Five agents built this site in parallel without a merge conflict in git' still states as fact something that has not happened yet. Only three lanes built pages, and no lane has been merged.",
+      "remedy": "Reword as: three lanes built it in parallel; they touch disjoint files, so the merges are expected to be textually clean."
+    },
+    {
+      "id": "R2-8",
+      "dimension": "scope",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The title still promises a 'Production-grade portfolio', while Open Question 3 says placeholder content blocks a public launch and hosting is deferred.",
+      "remedy": "Retitle to the actual scope (integrate three lane branches into one consistent site), or list the remaining launch blockers explicitly."
+    },
+    {
+      "id": "R2-9",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": "Verified scope: nothing in `projects.html`, `projects.js`,",
+      "problem": "The theme-hook scope ('only two selectors in projects.css'), the `tokens.css:64` dark block and the node v26.13.0 / 19-pass claims refer to files and runs in the lane worktrees outside this checkout, so this review could not check them independently. Probed flags (`git merge --no-ff`, `git -C`, `git status --porcelain`, `node --test`) all exist.",
+      "remedy": "Have the reviewer confirm these specific claims during the per-lane `/review` (grep for `data-theme`/`localStorage` in cloud2, and the dark block in cloud1's tokens.css) before the unification commit relies on them."
+    }
+  ],
+  "prior": [
+    {"id": "R1-1", "status": "resolved", "evidence": "Smoke is now split into a lane tier (lane checks plus lang/h1/links) that gates intermediate merges, and a strict tier (base.css order, nav, palette) required only after the unification commit, with pass conditions stated in Merge mechanics. The separate link-check gap the new lane tier exposes is tracked as R2-1.", "current_id": null},
+    {"id": "R1-2", "status": "resolved", "evidence": "Premise 2 now says 'Finished' is checked per lane by an explicit merge precondition (clean worktree via `git status --porcelain`, head recorded, re-review if the head moves), and the lane table records each lane's tree state.", "current_id": null},
+    {"id": "R1-3", "status": "resolved", "evidence": "The Assignment now says cloud1 commits its smoke-home edit first, then the reviewer reviews `portfolio-lane-1` 'at the new head'. That matches Next Steps 1 and 3, and the table marks heads as informational.", "current_id": null},
+    {"id": "R1-4", "status": "resolved", "evidence": "'Theme hook removal (cloud2)' lists the verified scope: no markup, JS, localStorage or test references; only two `[data-theme]` selectors in projects.css, deleted with its :root palette.", "current_id": null},
+    {"id": "R1-5", "status": "resolved", "evidence": "'Lane tests after merge' makes lane tests integration territory and requires the unification commit to adapt invalidated assertions, never delete them, with the reviewer checking this. Constraints and Next Steps 4 repeat it.", "current_id": null},
+    {"id": "R1-6", "status": "resolved", "evidence": "The CSS layering section cites the existing `@media (prefers-color-scheme: dark)` block at `tokens.css:64` covering --bg, --accent and the other color tokens, adds the new semantic tokens to both blocks, and gives the --pj status colors light and dark values. Independent confirmation outside this checkout is noted in R2-9.", "current_id": null},
+    {"id": "R1-7", "status": "resolved", "evidence": "The strict-tier palette check now fails any custom property outside tokens.css assigned a hex/rgb/hsl/named color, with an explicit --pj status allowlist and var() aliases passing, which catches `--pj-accent`. The remaining gap for ordinary declarations is tracked separately as R2-2.", "current_id": null},
+    {"id": "R1-8", "status": "resolved", "evidence": "The lane tier uses `node --test 'tests/**/*.test.js'` (glob form) and Constraints record node v26.13.0; the probe confirms node exposes the test runner.", "current_id": null},
+    {"id": "R1-9", "status": "resolved", "evidence": "The new preamble says the design supersedes INTEGRATION.md, its lane messages are withdrawn, no rework is sent, and Next Steps 2 deletes INTEGRATION.md.", "current_id": null},
+    {"id": "R1-10", "status": "resolved", "evidence": "The Problem Statement records 'Snapshot read 2026-11-05 ~07:50 local. Heads are informational; the reviewed head is whatever the lane's final commit is at review time.'", "current_id": null},
+    {"id": "R1-11", "status": "persisting", "evidence": "'What Makes This Cool' still says 'Five agents built this site in parallel without a merge conflict in git' before any merge.", "current_id": "R2-7"},
+    {"id": "R1-12", "status": "persisting", "evidence": "The check is now scoped to `.site-nav`, but href normalization for matching the page itself (index.html vs ./ vs /) is still undefined.", "current_id": "R2-6"},
+    {"id": "R1-13", "status": "resolved", "evidence": "The merge precondition requires that the lane diff against main contains no stray scratch files (.write-probe, *.tmp, editor dirs), and Next Steps 1 has cloud2 delete .write-probe.", "current_id": null},
+    {"id": "R1-14", "status": "persisting", "evidence": "The title is still 'Production-grade portfolio from the three lane branches', while Open Question 3 says placeholder content blocks a public launch.", "current_id": "R2-8"}
+  ]
+}
