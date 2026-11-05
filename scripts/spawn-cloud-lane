@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# Spawn a Claude cloud session with an explicit feature scope.
 set -euo pipefail
 lane="${1:-}"
 scope="${2:-}"
 if [[ -z "$lane" || -z "$scope" ]]; then
   echo "Usage: $0 <lane-name> \"<feature scope>\"" >&2
-  echo "Example: $0 portfolio-lane-4 \"build the projects grid page in src/app/projects\"" >&2
   exit 1
 fi
-cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-prompt="$lane: $scope. Own only the files this feature needs. Create a branch named $lane if needed. Done means green smoke/tests and a ready PR branch. Do not wait for extra confirmation beyond clarifying overlaps."
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+base="$(dirname "$root")"
+wt="$base/$lane"
+if [[ ! -d "$wt" ]]; then
+  git -C "$root" worktree add "$wt" -b "$lane" main 2>/dev/null || git -C "$root" worktree add "$wt" "$lane"
+fi
+cd "$wt"
+prompt="$lane: $scope. Work ONLY in this worktree ($wt). Own only this feature's files. Branch $lane. Done = smoke/tests green and commit ready for /review. Avoid files owned by other lanes in LANES.md."
 exec claude --cloud "$prompt"
