@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About · Portfolio</title>
+  <meta name="description" content="Background, experience highlights, and skills.">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">Portfolio</a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="projects.html">Projects</a></li>
+        <li><a href="about.html" aria-current="page">About</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <h1>About</h1>
+    <p class="lead">I'm a software engineer who builds fast, accessible web products and the tooling that keeps teams shipping them.</p>
+
+    <section aria-labelledby="highlights-heading">
+      <h2 id="highlights-heading">Highlights</h2>
+      <dl class="stats">
+        <div><dt>Years building for the web</dt><dd>6+</dd></div>
+        <div><dt>Products shipped to production</dt><dd>12</dd></div>
+        <div><dt>Median page load cut, last role</dt><dd>&minus;45%</dd></div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="experience-heading">
+      <h2 id="experience-heading">Experience</h2>
+      <ol class="timeline">
+        <li>
+          <article class="card role" aria-labelledby="role-1">
+            <div class="role-header">
+              <h3 id="role-1">Senior Frontend Engineer</h3>
+              <span class="muted"><time datetime="2023-03">Mar 2023</time> – Present</span>
+            </div>
+            <p class="role-meta">Company name · Remote</p>
+            <ul>
+              <li>Led the move to a component library used by four product teams.</li>
+              <li>Cut median page load by 45% through code splitting and image budgets.</li>
+              <li>Added accessibility checks to CI so WCAG AA issues block merges.</li>
+            </ul>
+          </article>
+        </li>
+        <li>
+          <article class="card role" aria-labelledby="role-2">
+            <div class="role-header">
+              <h3 id="role-2">Full-Stack Engineer</h3>
+              <span class="muted"><time datetime="2020-06">Jun 2020</time> – <time datetime="2023-02">Feb 2023</time></span>
+            </div>
+            <p class="role-meta">Company name · City</p>
+            <ul>
+              <li>Built and owned the billing dashboard from first commit to launch.</li>
+              <li>Wrote the API test suite that replaced manual release checks.</li>
+            </ul>
+          </article>
+        </li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="skills-heading">
+      <h2 id="skills-heading">Skills</h2>
+      <dl class="skill-groups">
+        <div>
+          <dt>Languages</dt>
+          <dd><ul class="tag-list"><li>TypeScript</li><li>JavaScript</li><li>HTML</li><li>CSS</li><li>SQL</li></ul></dd>
+        </div>
+        <div>
+          <dt>Frameworks &amp; platforms</dt>
+          <dd><ul class="tag-list"><li>React</li><li>Node.js</li><li>PostgreSQL</li><li>Docker</li></ul></dd>
+        </div>
+        <div>
+          <dt>Practices</dt>
+          <dd><ul class="tag-list"><li>Accessibility</li><li>Performance</li><li>Testing</li><li>CI/CD</li></ul></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="education-heading">
+      <h2 id="education-heading">Education</h2>
+      <div class="card">
+        <h3>B.S. Computer Science</h3>
+        <p class="role-meta">University name · <time datetime="2020">2020</time></p>
+      </div>
+    </section>
+
+    <div class="actions">
+      <a class="button" href="contact.html">Get in touch</a>
+      <a class="button button-secondary" href="projects.html">See projects</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Portfolio</p>
+    <ul>
+      <li><a href="https://github.com/your-handle" rel="me">GitHub</a></li>
+      <li><a href="https://www.linkedin.com/in/your-handle" rel="me">LinkedIn</a></li>
+    </ul>
+  </footer>
+</body>
+</html>

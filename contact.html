@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact · Portfolio</title>
+  <meta name="description" content="Send a message about work, collaborations, or questions.">
+  <link rel="stylesheet" href="css/pages.css">
+  <script src="js/contact-form.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">Portfolio</a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="projects.html">Projects</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="contact.html" aria-current="page">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <h1>Contact</h1>
+    <p class="lead">Questions, collaborations, or roles: send a message and I'll reply within two working days.</p>
+
+    <div class="contact-grid">
+      <section aria-labelledby="form-heading">
+        <h2 id="form-heading" class="visually-hidden">Message form</h2>
+
+        <div id="form-errors" class="alert alert-error" tabindex="-1" hidden>
+          <h3 id="form-errors-heading">Please fix the following:</h3>
+          <ul aria-labelledby="form-errors-heading"></ul>
+        </div>
+        <div id="form-status" role="status"></div>
+
+        <form id="contact-form" class="form card" action="mailto:hello@example.com" method="post" enctype="text/plain" novalidate>
+          <p class="hint">Fields marked <span class="required-mark" aria-hidden="true">*</span><span class="visually-hidden">with an asterisk</span> are required.</p>
+
+          <div class="field">
+            <label for="name">Name <span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="name" name="name" type="text" autocomplete="name" required maxlength="100" aria-describedby="name-error">
+            <p id="name-error" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="email">Email <span class="required-mark" aria-hidden="true">*</span></label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" aria-describedby="email-hint email-error">
+            <p id="email-hint" class="hint">So I can reply. Never shared.</p>
+            <p id="email-error" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="topic">Topic <span class="required-mark" aria-hidden="true">*</span></label>
+            <select id="topic" name="topic" required aria-describedby="topic-error">
+              <option value="">Choose a topic</option>
+              <option value="role">Job opportunity</option>
+              <option value="project">Freelance project</option>
+              <option value="collab">Collaboration</option>
+              <option value="other">Something else</option>
+            </select>
+            <p id="topic-error" class="error"></p>
+          </div>
+
+          <div class="field">
+            <label for="message">Message <span class="required-mark" aria-hidden="true">*</span></label>
+            <textarea id="message" name="message" required minlength="20" maxlength="2000" aria-describedby="message-hint message-error"></textarea>
+            <p id="message-hint" class="hint">At least 20 characters.</p>
+            <p id="message-counter" class="counter" aria-hidden="true">0 / 2000</p>
+            <p id="message-error" class="error"></p>
+          </div>
+
+          <div class="hp-field" aria-hidden="true">
+            <label for="website">Leave this field empty</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div>
+            <button class="button" type="submit">Send message</button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="card" aria-labelledby="direct-heading">
+        <h2 id="direct-heading">Prefer direct?</h2>
+        <ul class="contact-list">
+          <li><span>Email</span><a href="mailto:hello@example.com">hello@example.com</a></li>
+          <li><span>GitHub</span><a href="https://github.com/your-handle" rel="me">github.com/your-handle</a></li>
+          <li><span>LinkedIn</span><a href="https://www.linkedin.com/in/your-handle" rel="me">linkedin.com/in/your-handle</a></li>
+        </ul>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Portfolio</p>
+    <ul>
+      <li><a href="https://github.com/your-handle" rel="me">GitHub</a></li>
+      <li><a href="https://www.linkedin.com/in/your-handle" rel="me">LinkedIn</a></li>
+    </ul>
+  </footer>
+</body>
+</html>
