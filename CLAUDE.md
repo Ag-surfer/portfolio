@@ -11,6 +11,14 @@ Sprint order (do not skip):
 - Local `reviewer`: `/review` (and `claude ultrareview` when useful). Optional `/design-review` / `/devex-review`. Never implement features.
 - Cloud lanes: implement only their LANES.md scope on their branch. Before done: tests/smoke green, commit, hand to reviewer for `/review`. Use `/careful` near risky edits. Do not `/ship` unless reviewer signed off and `gh` is available.
 
+## Git remote
+- `origin` = https://github.com/Ag-surfer/portfolio (public). Push your own branch only; never push another lane's branch.
+- The GitHub token lives in the system keyring, which the Bash sandbox cannot reach (D-Bus blocked).
+  Reads (`fetch`, `ls-remote`) work sandboxed. Run `git push` and `gh` write commands with the sandbox
+  disabled; the owner approves each one. A sandboxed push fails with `could not read Username` — that is
+  expected, not a credential problem: retry unsandboxed, don't change credential config or store tokens.
+- Cloud lanes push through the Claude GitHub app, not the local token.
+
 ## Done means
 - Tests or smoke checks pass
 - `/review` clean enough to ship
