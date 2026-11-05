@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Smoke check for the projects showcase.
+#  1. Runs the dependency-free unit + UI tests (scripts/test-projects.mjs).
+#  2. Serves the repo and renders projects.html in headless Chromium, checking
+#     the default view, a URL-driven tag filter and the empty state.
+# Set SKIP_BROWSER=1 to run only step 1 (e.g. where Chromium cannot start).
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "== unit + UI tests"
+node --test-reporter=dot scripts/test-projects.mjs
+
+if [[ "${SKIP_BROWSER:-}" == 1 ]]; then echo "OK (browser checks skipped)"; exit 0; fi
+
+browser="${CHROMIUM:-$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)}"
+[[ -n "$browser" ]] || { echo "FAIL: no Chromium found (set CHROMIUM=/path or SKIP_BROWSER=1)" >&2; exit 1; }
+
+port="${PORT:-$((20000 + RANDOM % 20000))}"
+tmp="$(mktemp -d)"
+python3 -m http.server "$port" --bind 127.0.0.1 >/dev/null 2>&1 &
+srv=$!
+trap 'kill $srv 2>/dev/null || true; rm -rf "$tmp"' EXIT
+for _ in $(seq 25); do curl -fs "http://127.0.0.1:$port/projects.html" >/dev/null && break; sleep 0.2; done
+
+render() {
+  XDG_CONFIG_HOME="$tmp" XDG_CACHE_HOME="$tmp" "$browser" --headless --no-sandbox --disable-gpu \
+    --no-first-run --user-data-dir="$tmp/profile" --virtual-time-budget=5000 \
+    --dump-dom "http://127.0.0.1:$port/projects.html$1" 2>/dev/null
+}
+# grep exits 1 on zero matches; under pipefail that would abort the script, so tolerate it.
+count() { { grep -oE "$1" <<<"$2" || true; } | wc -l | tr -d ' '; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+total="$(python3 -c 'import json;print(len(json.load(open("data/projects.json"))["projects"]))')"
+games="$(python3 -c 'import json;print(sum("games" in p["tags"] for p in json.load(open("data/projects.json"))["projects"]))')"
+
+echo "== browser: default view"
+dom="$(render "")"
+cards="$(count '<li class="pj-card[^"]*" id="project-' "$dom")"
+hidden="$(count '<li class="pj-card[^>]* hidden=' "$dom")"
+[[ "$cards" -eq "$total" ]] || { grep -o 'id="pj-error"[^<]*<h2>[^<]*</h2><p>[^<]*' <<<"$dom" >&2 || true; fail "rendered $cards cards, expected $total"; }
+[[ "$hidden" -eq 0 ]] || fail "$hidden cards hidden in default view"
+[[ "$(count 'class="pj-chip" data-tag=' "$dom")" -gt 8 ]] || fail "tag filter bar missing"
+if grep -qE 'id="pj-controls"[^>]* hidden' <<<"$dom"; then fail "filter controls still hidden"; fi
+grep -q "Showing all $total projects" <<<"$dom" || fail "count text missing"
+echo "   $cards cards, all visible"
+
+echo "== browser: ?tags=games"
+dom="$(render "?tags=games")"
+shown=$(( $(count '<li class="pj-card[^"]*" id="project-' "$dom") - $(count '<li class="pj-card[^>]* hidden=' "$dom") ))
+[[ "$shown" -eq "$games" ]] || fail "tag filter shows $shown cards, expected $games"
+echo "   $shown of $total visible"
+
+echo "== browser: empty state"
+dom="$(render "?q=zzzz-no-match")"
+if grep -qE 'id="pj-empty"[^>]* hidden' <<<"$dom"; then fail "empty state not shown for a no-match search"; fi
+grep -q 'No projects match these filters' <<<"$dom" || fail "empty-state copy missing"
+echo "   empty state shown"
+
+echo "OK: projects showcase smoke passed"

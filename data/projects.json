@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "slug": "herdr-lanes",
+      "title": "Herdr Lanes",
+      "summary": "Fan-out orchestration for cloud coding sessions: one feature scope per lane, disjoint files, merged through a review gate.",
+      "role": "Creator",
+      "year": 2026,
+      "status": "active",
+      "featured": true,
+      "tags": ["tooling", "ai", "devex", "cli"],
+      "stack": ["Bash", "Git worktrees", "Claude Code"],
+      "highlights": [
+        "Spawns and attaches isolated lanes from a single ops tab",
+        "Worktree-per-lane layout removed cross-session index collisions",
+        "Review gate keeps every lane ready to merge"
+      ],
+      "links": { "repo": "https://example.com/herdr-lanes", "writeup": "https://example.com/herdr-lanes/notes" }
+    },
+    {
+      "slug": "trail-log",
+      "title": "Trail Log",
+      "summary": "Offline-first hiking journal that syncs GPX tracks, photos and notes once you are back in signal range.",
+      "role": "Solo developer",
+      "year": 2025,
+      "status": "shipped",
+      "featured": true,
+      "tags": ["mobile", "offline", "maps"],
+      "stack": ["Kotlin", "SQLite", "MapLibre"],
+      "highlights": [
+        "Conflict-free sync for edits made on two devices offline",
+        "Track simplification cut stored GPX size by about 80%",
+        "Battery-aware location sampling"
+      ],
+      "links": { "demo": "https://example.com/trail-log", "repo": "https://example.com/trail-log/src" }
+    },
+    {
+      "slug": "doc-diff",
+      "title": "Doc Diff",
+      "summary": "Semantic diff for Markdown that highlights moved sections and reworded paragraphs, not just changed lines.",
+      "role": "Creator",
+      "year": 2026,
+      "status": "wip",
+      "featured": true,
+      "tags": ["web", "tooling", "markdown", "devex"],
+      "stack": ["TypeScript", "unified", "Web Workers"],
+      "highlights": [
+        "Detects section moves across a whole document tree",
+        "Diffing runs in a worker so large docs never block typing"
+      ],
+      "links": { "demo": "https://example.com/doc-diff" }
+    },
+    {
+      "slug": "ledger-lite",
+      "title": "Ledger Lite",
+      "summary": "Plain-text budgeting CLI with monthly rollups, category rules and CSV import from common bank exports.",
+      "role": "Solo developer",
+      "year": 2025,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["cli", "finance", "data"],
+      "stack": ["Rust", "clap", "serde"],
+      "highlights": [
+        "Rule engine auto-categorizes about 90% of imported transactions",
+        "Imports from five bank CSV dialects"
+      ],
+      "links": { "repo": "https://example.com/ledger-lite" }
+    },
+    {
+      "slug": "pixel-garden",
+      "title": "Pixel Garden",
+      "summary": "Generative art toy: plant seeds on a grid and watch L-system plants grow, wilt and cross-pollinate.",
+      "role": "Creator",
+      "year": 2024,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["web", "games", "design"],
+      "stack": ["JavaScript", "Canvas 2D"],
+      "highlights": [
+        "Deterministic seeds so gardens can be shared as URLs",
+        "Holds 60 fps with 2,000 plants on a mid-range phone"
+      ],
+      "links": { "demo": "https://example.com/pixel-garden", "repo": "https://example.com/pixel-garden/src" }
+    },
+    {
+      "slug": "quiet-hours",
+      "title": "Quiet Hours",
+      "summary": "Desktop focus timer that mutes notifications, logs sessions and shows a weekly heatmap of deep work.",
+      "role": "Solo developer",
+      "year": 2023,
+      "status": "archived",
+      "featured": false,
+      "tags": ["desktop", "productivity"],
+      "stack": ["Tauri", "Rust", "Svelte"],
+      "highlights": ["Native do-not-disturb integration on three platforms"],
+      "links": { "repo": "https://example.com/quiet-hours" }
+    },
+    {
+      "slug": "shelf-scan",
+      "title": "Shelf Scan",
+      "summary": "Point a phone at a bookshelf to catalogue every spine, then search your library by title, author or colour.",
+      "role": "Lead developer",
+      "year": 2025,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["mobile", "ai", "data"],
+      "stack": ["Swift", "Vision", "Core ML"],
+      "highlights": [
+        "On-device OCR, so no photos leave the phone",
+        "Batch mode catalogues a full shelf in one pass"
+      ],
+      "links": { "demo": "https://example.com/shelf-scan" }
+    },
+    {
+      "slug": "deploy-radar",
+      "title": "Deploy Radar",
+      "summary": "Dashboard that correlates deploys with error-rate and latency changes so regressions surface within minutes.",
+      "role": "Backend and frontend",
+      "year": 2024,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["infra", "data", "web"],
+      "stack": ["Go", "PostgreSQL", "htmx"],
+      "highlights": [
+        "Change-point detection flags a regression within 5 minutes",
+        "Adopted by three internal teams"
+      ],
+      "links": { "writeup": "https://example.com/deploy-radar" }
+    },
+    {
+      "slug": "type-pairs",
+      "title": "Type Pairs",
+      "summary": "Font-pairing explorer that previews heading and body combinations on real layouts with contrast checks.",
+      "role": "Designer and developer",
+      "year": 2024,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["web", "design", "accessibility"],
+      "stack": ["TypeScript", "React", "Variable fonts"],
+      "highlights": [
+        "Flags pairings that fail WCAG contrast at body sizes",
+        "Exports CSS custom properties"
+      ],
+      "links": { "demo": "https://example.com/type-pairs" }
+    },
+    {
+      "slug": "commit-coach",
+      "title": "Commit Coach",
+      "summary": "Git hook that reviews a staged diff and suggests a focused commit message, or a split when the change is doing two things.",
+      "role": "Creator",
+      "year": 2026,
+      "status": "active",
+      "featured": false,
+      "tags": ["cli", "ai", "devex", "tooling"],
+      "stack": ["Python", "Git hooks"],
+      "highlights": [
+        "Suggests splitting commits that mix refactors with features",
+        "Runs offline with a local model, or with an API key"
+      ],
+      "links": { "repo": "https://example.com/commit-coach" }
+    },
+    {
+      "slug": "tide-tables",
+      "title": "Tide Tables",
+      "summary": "Lightweight tide and swell forecast site for small harbours, built to load fast on patchy coastal connections.",
+      "role": "Solo developer",
+      "year": 2023,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["web", "offline", "maps", "data"],
+      "stack": ["Astro", "Service Worker"],
+      "highlights": [
+        "Under 30 KB on first load",
+        "Last forecast stays readable offline"
+      ],
+      "links": { "demo": "https://example.com/tide-tables" }
+    },
+    {
+      "slug": "kiln",
+      "title": "Kiln",
+      "summary": "Reproducible dev environments from one declarative file, with cached layers shared across a team.",
+      "role": "Core contributor",
+      "year": 2024,
+      "status": "active",
+      "featured": false,
+      "tags": ["infra", "devex", "open-source", "cli"],
+      "stack": ["Go", "Nix", "OCI"],
+      "highlights": [
+        "Cut cold environment setup from 20 minutes to under 2",
+        "Maintains the layer-cache subsystem"
+      ],
+      "links": { "repo": "https://example.com/kiln" }
+    },
+    {
+      "slug": "sign-sketch",
+      "title": "Sign Sketch",
+      "summary": "Practice tool for learning fingerspelling, with hand-pose feedback from the webcam in real time.",
+      "role": "Developer",
+      "year": 2025,
+      "status": "wip",
+      "featured": false,
+      "tags": ["web", "ai", "accessibility"],
+      "stack": ["TypeScript", "MediaPipe", "WebGL"],
+      "highlights": ["Runs fully in the browser; video is never uploaded"],
+      "links": {}
+    },
+    {
+      "slug": "budget-board",
+      "title": "Budget Board",
+      "summary": "Shared household budget board with envelopes, recurring bills and a monthly what-changed digest.",
+      "role": "Full-stack",
+      "year": 2022,
+      "status": "archived",
+      "featured": false,
+      "tags": ["web", "finance", "productivity"],
+      "stack": ["Ruby on Rails", "Hotwire"],
+      "highlights": ["Monthly digest email explained every change in plain language"],
+      "links": { "writeup": "https://example.com/budget-board" }
+    },
+    {
+      "slug": "lanternlight",
+      "title": "Lanternlight",
+      "summary": "Game-jam puzzle game where your lantern reveals only part of a shifting maze. Built in 48 hours.",
+      "role": "Programmer",
+      "year": 2023,
+      "status": "shipped",
+      "featured": false,
+      "tags": ["games", "design"],
+      "stack": ["Godot", "GDScript"],
+      "highlights": ["Placed top 10% for innovation in a 48-hour jam"],
+      "links": { "demo": "https://example.com/lanternlight" }
+    },
+    {
+      "slug": "logline",
+      "title": "Logline",
+      "summary": "Terminal log viewer that tails several services at once with structured filtering and colour-coded sources.",
+      "role": "Creator",
+      "year": 2026,
+      "status": "wip",
+      "featured": false,
+      "tags": ["cli", "devex", "infra", "open-source"],
+      "stack": ["Rust", "ratatui"],
+      "highlights": [
+        "Filters JSON logs by field without a pre-built index",
+        "Keeps memory flat while tailing millions of lines"
+      ],
+      "links": { "repo": "https://example.com/logline" }
+    }
+  ]
+}
